@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Exit-9B/CustomSkills/main/docs/schema/skill.json",
+  "id": "TheArtofStance",
+  "name": "$Stances_Name",
+  "description": "$Stances_Description",
+  "level": "The Art of Stances.esp|800",
+  "ratio": "The Art of Stances.esp|801",
+  "legendary": "The Art of Stances.esp|802",
+  "experienceFormula": {
+    "useMult": 0.8,
+    "useOffset": 27.0,
+    "improveMult": 2.0,
+    "improveOffset": 0.0,
+    "enableXPPerRank": true
+  },
+  "nodes": [
+    {
+      "id": "Mastery",
+      "perk": "The Art of Stances.esp|803",
+      "x": 0.4,
+      "y": 0.0
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Exit-9B/CustomSkills/main/docs/schema/CustomSkill.json",
+  "version": 1,
+  "skydome": {
+    "model": "Ivy Resources/interface/intperkskydome.nif",
+    "cameraRightPoint": 7
+  },
+  "skills": [
+    "Enchanting",
+    "Smithing",
+    "HeavyArmor",
+    "Block",
+    "TwoHanded",
+    "OneHanded",
+    "Marksman",
+    { "$ref": "Stances/Stances.json" },
+    "LightArmor",
+    "Sneak",
+    "Lockpicking",
+    "Pickpocket",
+    "Speechcraft",
+    "Alchemy",
+    "Illusion",
+    "Conjuration",
+    "Destruction",
+    "Restoration",
+    "Alteration"
+  ]
+}
