@@ -3,9 +3,11 @@
   "name": "stances",
   "version-string": "0.1.0.0",
   "dependencies": [
+    "clib-util",
     "directxtk",
     "rapidcsv",
     "rsm-binary-io",
+    "skse-mcp",
     "spdlog",
     "xbyak"
   ],

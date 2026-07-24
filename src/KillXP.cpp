@@ -2,6 +2,7 @@
 
 #include "CustomSkillsAPI.h"
 #include "Settings.h"
+#include "StanceManager.h"
 
 namespace Stances
 {
@@ -57,7 +58,13 @@ namespace Stances
         auto* killer = a_event->killer;
         auto* victim = a_event->victim;
 
-        if (!IsPlayerKill(killer) || !IsValidVictim(victim)) {
+        if (!IsPlayerKill(killer)) {
+            return RE::BSEventNotifyControl::kContinue;
+        }
+
+        StanceManager::HandlePlayerKill();
+
+        if (!IsValidVictim(victim)) {
             return RE::BSEventNotifyControl::kContinue;
         }
 

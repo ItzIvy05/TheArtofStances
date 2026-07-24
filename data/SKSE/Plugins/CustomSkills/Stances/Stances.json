@@ -14,11 +14,18 @@
     "enableXPPerRank": true
   },
   "nodes": [
-    {
-      "id": "Mastery",
-      "perk": "The Art of Stances.esp|803",
-      "x": 0.4,
-      "y": 0.0
-    }
+    { "id": "Root", "x": 0.0, "y": 0.0 },
+    { "id": "Bear1",  "perk": "The Art of Stances.esp|920", "x": 1.6, "y": 0.45, "links": ["Bear25"] },
+    { "id": "Bear25", "perk": "The Art of Stances.esp|921", "x": 1.75, "y": 1.65, "links": ["Bear50"] },
+    { "id": "Bear50", "perk": "The Art of Stances.esp|922", "x": 1.9, "y": 2.85, "links": ["Bear75"] },
+    { "id": "Bear75", "perk": "The Art of Stances.esp|923", "x": 2.0, "y": 4.05 },
+    { "id": "Wolf1",  "perk": "The Art of Stances.esp|924", "x": 0.0, "y": 0.15, "links": ["Wolf25"] },
+    { "id": "Wolf25", "perk": "The Art of Stances.esp|925", "x": 0.0, "y": 1.35, "links": ["Wolf50"] },
+    { "id": "Wolf50", "perk": "The Art of Stances.esp|926", "x": 0.0, "y": 2.55, "links": ["Wolf75"] },
+    { "id": "Wolf75", "perk": "The Art of Stances.esp|927", "x": 0.0, "y": 3.75 },
+    { "id": "Hawk1",  "perk": "The Art of Stances.esp|928", "x": -1.6, "y": 0.45, "links": ["Hawk25"] },
+    { "id": "Hawk25", "perk": "The Art of Stances.esp|929", "x": -1.75, "y": 1.65, "links": ["Hawk50"] },
+    { "id": "Hawk50", "perk": "The Art of Stances.esp|92A", "x": -1.9, "y": 2.85, "links": ["Hawk75"] },
+    { "id": "Hawk75", "perk": "The Art of Stances.esp|92B", "x": -2.0, "y": 4.05 }
   ]
 }

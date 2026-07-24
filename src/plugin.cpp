@@ -1,10 +1,9 @@
 #include "CustomSkillsAPI.h"
 #include "Events.h"
-#include "Hooks.h"
 #include "Manager.h"
 #include "MCP.h"
 #include "Plugin.h"
-#include "Serialization.h"
+#include "StanceInput.h"
 #include "logger.h"
 
 namespace
@@ -16,12 +15,13 @@ namespace
         }
 
         switch (a_msg->type) {
-        case SKSE::MessagingInterface::kPostLoad:
-            Stances::Hooks::Install();
+        case SKSE::MessagingInterface::kInputLoaded:
+            Stances::StanceInput::Register();
             break;
         case SKSE::MessagingInterface::kDataLoaded:
             Stances::Manager::GetSingleton()->OnDataLoaded();
             Stances::Events::Register();
+            Stances::MCP::Register();
             break;
         case SKSE::MessagingInterface::kNewGame:
             Stances::Manager::GetSingleton()->OnNewGame();
@@ -56,9 +56,6 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
     if (!messaging->RegisterListener("CustomSkills", Stances::CustomSkillsAPI::OnMessage)) {
         logger::warn("Failed to register Custom Skills Framework message listener. Kill XP will wait for interface availability.");
     }
-
-    Stances::Serialization::Register();
-    Stances::MCP::Register();
 
     logger::info("{} loaded.", Stances::PLUGIN_NAME);
     return true;
