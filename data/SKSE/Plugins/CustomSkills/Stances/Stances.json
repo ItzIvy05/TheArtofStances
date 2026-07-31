@@ -14,7 +14,6 @@
     "enableXPPerRank": true
   },
   "nodes": [
-    { "id": "Root", "x": 0.0, "y": 0.0 },
     { "id": "Bear1",  "perk": "The Art of Stances.esp|920", "x": 1.6, "y": 0.45, "links": ["Bear25"] },
     { "id": "Bear25", "perk": "The Art of Stances.esp|921", "x": 1.75, "y": 1.65, "links": ["Bear50"] },
     { "id": "Bear50", "perk": "The Art of Stances.esp|922", "x": 1.9, "y": 2.85, "links": ["Bear75"] },

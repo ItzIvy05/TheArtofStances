@@ -3,7 +3,7 @@
   "version": 1,
   "skydome": {
     "model": "Ivy Resources/interface/intperkskydome.nif",
-    "cameraRightPoint": 7
+    "cameraRightPoint": 1
   },
   "skills": [
     "Enchanting",
