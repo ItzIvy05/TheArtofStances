@@ -39,6 +39,51 @@ namespace Stances
 
             return true;
         }
+
+        [[nodiscard]] bool IsRangedOrMagic(RE::TESForm* a_object)
+        {
+            if (!a_object) {
+                return false;
+            }
+
+            if (a_object->Is(RE::FormType::Spell, RE::FormType::Scroll)) {
+                return true;
+            }
+
+            const auto weapon = a_object->As<RE::TESObjectWEAP>();
+            if (!weapon) {
+                return false;
+            }
+
+            switch (weapon->GetWeaponType()) {
+            case RE::WEAPON_TYPE::kBow:
+            case RE::WEAPON_TYPE::kCrossbow:
+            case RE::WEAPON_TYPE::kStaff:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        // Stances are melee disciplines, so archery and magic kills earn nothing.
+        [[nodiscard]] bool IsMeleeKill()
+        {
+            const auto player = RE::PlayerCharacter::GetSingleton();
+            if (!player) {
+                return false;
+            }
+
+            auto* right = player->GetEquippedObject(false);
+            if (IsRangedOrMagic(right)) {
+                return false;
+            }
+
+            if (!right && IsRangedOrMagic(player->GetEquippedObject(true))) {
+                return false;
+            }
+
+            return true;
+        }
     }
 
     KillXPEventSink* KillXPEventSink::GetSingleton()
@@ -65,6 +110,13 @@ namespace Stances
         StanceManager::HandlePlayerKill();
 
         if (!IsValidVictim(victim)) {
+            return RE::BSEventNotifyControl::kContinue;
+        }
+
+        if (!IsMeleeKill()) {
+            if (Settings::GetSingleton()->DebugLogging()) {
+                logger::info("Kill was not made in melee; no Stances XP awarded.");
+            }
             return RE::BSEventNotifyControl::kContinue;
         }
 

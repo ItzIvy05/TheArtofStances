@@ -158,27 +158,23 @@ namespace Stances
             pressed.insert(NormalizeKey(button));
         }
 
-        if (cycleKey_.Update(pressed)) {
+        // Every hotkey must see every event, otherwise one that fired earlier in the
+        // chain leaves the others latched and they stop responding.
+        const bool cycle = cycleKey_.Update(pressed);
+        const bool wolf = wolfKey_.Update(pressed);
+        const bool bear = bearKey_.Update(pressed);
+        const bool hawk = hawkKey_.Update(pressed);
+        const bool neutral = neutralKey_.Update(pressed);
+
+        if (cycle) {
             StanceManager::CycleStancesPlayer();
-            return RE::BSEventNotifyControl::kContinue;
-        }
-
-        if (wolfKey_.Update(pressed)) {
+        } else if (wolf) {
             StanceManager::UpdateStancePlayer(Stance::kWolf);
-            return RE::BSEventNotifyControl::kContinue;
-        }
-
-        if (bearKey_.Update(pressed)) {
+        } else if (bear) {
             StanceManager::UpdateStancePlayer(Stance::kBear);
-            return RE::BSEventNotifyControl::kContinue;
-        }
-
-        if (hawkKey_.Update(pressed)) {
+        } else if (hawk) {
             StanceManager::UpdateStancePlayer(Stance::kHawk);
-            return RE::BSEventNotifyControl::kContinue;
-        }
-
-        if (neutralKey_.Update(pressed)) {
+        } else if (neutral) {
             StanceManager::UpdateStancePlayer(Stance::kNeutral);
         }
 
