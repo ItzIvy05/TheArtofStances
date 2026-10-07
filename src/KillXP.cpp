@@ -14,25 +14,23 @@ namespace Stances
 
         [[nodiscard]] bool IsPlayerKill(RE::Actor* a_killer)
         {
-            const auto player = RE::PlayerCharacter::GetSingleton();
-            return player && a_killer == player;
+            return a_killer && a_killer->IsPlayerRef();
         }
 
         [[nodiscard]] bool IsValidVictim(RE::Actor* a_victim)
         {
-            const auto player = RE::PlayerCharacter::GetSingleton();
-            if (!player || !a_victim || a_victim == player) {
+            if (!a_victim || a_victim->IsPlayerRef()) {
                 return false;
             }
 
-            // Hardcoded safety filters. These are intentionally not exposed in the INI.
+            // not exposed in the ini on purpose
             if (a_victim->IsPlayerTeammate()) {
                 return false;
             }
 
             if (a_victim->IsCommandedActor()) {
                 const auto commander = a_victim->GetCommandingActor();
-                if (commander && commander.get() == player) {
+                if (commander && commander->IsPlayerRef()) {
                     return false;
                 }
             }
@@ -51,21 +49,10 @@ namespace Stances
             }
 
             const auto weapon = a_object->As<RE::TESObjectWEAP>();
-            if (!weapon) {
-                return false;
-            }
-
-            switch (weapon->GetWeaponType()) {
-            case RE::WEAPON_TYPE::kBow:
-            case RE::WEAPON_TYPE::kCrossbow:
-            case RE::WEAPON_TYPE::kStaff:
-                return true;
-            default:
-                return false;
-            }
+            return weapon && weapon->IsRanged();
         }
 
-        // Stances are melee disciplines, so archery and magic kills earn nothing.
+        // melee kills only
         [[nodiscard]] bool IsMeleeKill()
         {
             const auto player = RE::PlayerCharacter::GetSingleton();
@@ -86,15 +73,7 @@ namespace Stances
         }
     }
 
-    KillXPEventSink* KillXPEventSink::GetSingleton()
-    {
-        static KillXPEventSink singleton;
-        return std::addressof(singleton);
-    }
-
-    RE::BSEventNotifyControl KillXPEventSink::ProcessEvent(
-        const RE::ActorKill::Event* a_event,
-        [[maybe_unused]] RE::BSTEventSource<RE::ActorKill::Event>* a_source)
+    RE::BSEventNotifyControl KillXPEventSink::ProcessEvent(const RE::ActorKill::Event* a_event, [[maybe_unused]] RE::BSTEventSource<RE::ActorKill::Event>* a_source)
     {
         if (!a_event) {
             return RE::BSEventNotifyControl::kContinue;
@@ -103,18 +82,14 @@ namespace Stances
         auto* killer = a_event->killer;
         auto* victim = a_event->victim;
 
-        if (!IsPlayerKill(killer)) {
+        if (!IsPlayerKill(killer) || !IsValidVictim(victim)) {
             return RE::BSEventNotifyControl::kContinue;
         }
 
         StanceManager::HandlePlayerKill();
 
-        if (!IsValidVictim(victim)) {
-            return RE::BSEventNotifyControl::kContinue;
-        }
-
         if (!IsMeleeKill()) {
-            if (Settings::GetSingleton()->DebugLogging()) {
+            if (Settings::debugLogging.GetValue()) {
                 logger::info("Kill was not made in melee; no Stances XP awarded.");
             }
             return RE::BSEventNotifyControl::kContinue;
@@ -132,24 +107,16 @@ namespace Stances
             logger::info("Custom Skills Framework interface is now available; Stances kill XP awards resumed.");
         }
 
-        const auto settings = Settings::GetSingleton();
-        const auto xp = settings->CalculateKillXP(victim);
+        const auto xp = Settings::CalculateKillXP(victim);
         if (xp <= 0.0f) {
             return RE::BSEventNotifyControl::kContinue;
         }
 
-        // This value is CSF skill-use magnitude. CSF then applies Stances.json experienceFormula
-        // and updates the level/ratio globals through its built-in leveling path.
+        // skill-use magnitude, csf applies the Stances.json formula
         customSkills->AdvanceSkill(SKILL_ID, xp);
 
-        if (settings->DebugLogging()) {
-            logger::info(
-                "Advanced {} by {} skill-use magnitude. killer=0x{:08X} victim=0x{:08X} victimLevel={}",
-                SKILL_ID,
-                xp,
-                killer->GetFormID(),
-                victim->GetFormID(),
-                victim->GetLevel());
+        if (Settings::debugLogging.GetValue()) {
+            logger::info("Advanced {} by {} skill-use magnitude. killer=0x{:08X} victim=0x{:08X} victimLevel={}", SKILL_ID, xp, killer->GetFormID(), victim->GetFormID(), victim->GetLevel());
         }
 
         return RE::BSEventNotifyControl::kContinue;

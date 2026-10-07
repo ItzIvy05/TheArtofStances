@@ -8,41 +8,22 @@ namespace Stances::Events
 {
     namespace
     {
-        class MenuEventSink final : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
+        class MenuEventSink final : public REX::Singleton<MenuEventSink>, public RE::BSTEventSink<RE::MenuOpenCloseEvent>
         {
         public:
-            static MenuEventSink* GetSingleton()
-            {
-                static MenuEventSink singleton;
-                return std::addressof(singleton);
-            }
-
-            RE::BSEventNotifyControl ProcessEvent(
-                const RE::MenuOpenCloseEvent* a_event,
-                [[maybe_unused]] RE::BSTEventSource<RE::MenuOpenCloseEvent>* a_source) override
+            RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent* a_event, [[maybe_unused]] RE::BSTEventSource<RE::MenuOpenCloseEvent>* a_source) override
             {
                 if (!a_event) {
                     return RE::BSEventNotifyControl::kContinue;
-                }
-
-                if (a_event->menuName == RE::RaceSexMenu::MENU_NAME && !a_event->opening) {
-                    StanceManager::ApplyDefaultStance();
                 }
 
                 if (a_event->menuName == RE::StatsMenu::MENU_NAME) {
                     StanceManager::NotifyStatsMenu(a_event->opening);
                 }
 
-                if (a_event->menuName == "HUD Menu" && a_event->opening) {
-                    StanceManager::ApplyDefaultStance();
-                }
-
                 Widget::NotifyMenuEvent(a_event->menuName.c_str(), a_event->opening);
                 return RE::BSEventNotifyControl::kContinue;
             }
-
-        private:
-            MenuEventSink() = default;
         };
     }
 

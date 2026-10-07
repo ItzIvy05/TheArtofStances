@@ -21,9 +21,4 @@ namespace Stances::CustomSkillsAPI
     {
         return g_customSkills;
     }
-
-    bool IsReady() noexcept
-    {
-        return g_customSkills != nullptr;
-    }
 }

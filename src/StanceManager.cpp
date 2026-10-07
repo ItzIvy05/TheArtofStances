@@ -2,11 +2,26 @@
 
 #include "Settings.h"
 #include "StanceForms.h"
-#include "Utils.h"
 #include "Widget.h"
 
 namespace Stances
 {
+    namespace
+    {
+        void ApplySpell(RE::Actor* a_actor, RE::SpellItem* a_spell)
+        {
+            if (a_spell->IsPermanent()) {
+                a_actor->AddSpell(a_spell);
+                return;
+            }
+
+            const auto caster = a_actor->GetMagicCaster(RE::MagicSystem::CastingSource::kInstant);
+            if (caster) {
+                caster->CastSpellImmediate(a_spell, false, a_actor, 1.0f, false, 0.0f, nullptr);
+            }
+        }
+    }
+
     Stance StanceManager::CurrentStance()
     {
         if (!StanceForms::currentStanceGlobal) {
@@ -62,34 +77,6 @@ namespace Stances
         return !perk || player->HasPerk(perk);
     }
 
-    void StanceManager::ApplyDefaultStance()
-    {
-        if (!StanceForms::IsReady()) {
-            return;
-        }
-
-        if (!Settings::GetSingleton()->ApplyStanceOnStart()) {
-            Widget::Refresh();
-            return;
-        }
-
-        const auto player = RE::PlayerCharacter::GetSingleton();
-        if (!player) {
-            return;
-        }
-
-        if (!HasAnyStance(player)) {
-            for (const auto stance : { Stance::kWolf, Stance::kBear, Stance::kHawk }) {
-                if (IsStanceUnlocked(stance)) {
-                    UpdateStance(stance, player);
-                    return;
-                }
-            }
-        }
-
-        Widget::Refresh();
-    }
-
     void StanceManager::UpdateStance(Stance a_stance, RE::Actor* a_actor)
     {
         if (!StanceForms::IsReady()) {
@@ -97,7 +84,7 @@ namespace Stances
         }
 
         const auto previous = CurrentStance();
-        if (Settings::GetSingleton()->DebugLogging()) {
+        if (Settings::debugLogging.GetValue()) {
             logger::info("Switching stance: {} -> {}", StanceName(previous), StanceName(a_stance));
         }
 
@@ -110,9 +97,14 @@ namespace Stances
     void StanceManager::UpdateStancePlayer(Stance a_stance)
     {
         if (!IsStanceUnlocked(a_stance)) {
-            if (Settings::GetSingleton()->DebugLogging()) {
+            if (Settings::debugLogging.GetValue()) {
                 logger::info("{} stance is locked; Aspect perk missing.", StanceName(a_stance));
             }
+            return;
+        }
+
+        if (a_stance == CurrentStance()) {
+            Widget::Pop();
             return;
         }
 
@@ -122,28 +114,21 @@ namespace Stances
         }
     }
 
-    bool StanceManager::CycleStancesPlayer()
+    void StanceManager::CycleStancesPlayer()
     {
         if (!StanceForms::IsReady()) {
-            return false;
+            return;
         }
 
-        const auto current = CurrentStance();
-        auto candidate = static_cast<std::uint32_t>(current);
+        auto candidate = static_cast<std::uint32_t>(CurrentStance());
         for (int i = 0; i < 3; ++i) {
             candidate = candidate % 3 + 1;
             const auto stance = static_cast<Stance>(candidate);
             if (IsStanceUnlocked(stance)) {
-                if (stance != current) {
-                    UpdateStancePlayer(stance);
-                } else {
-                    Widget::Pop();
-                }
-                return true;
+                UpdateStancePlayer(stance);
+                return;
             }
         }
-
-        return true;
     }
 
     void StanceManager::NotifyStatsMenu(bool a_opening)
@@ -191,7 +176,7 @@ namespace Stances
 
     void StanceManager::HandlePlayerKill()
     {
-        if (!StanceForms::savageInstinctControlEffect || !StanceForms::savageInstinctSpell) {
+        if (!StanceForms::savageInstinctControlEffect || !StanceForms::savageInstinctSpell || CurrentStance() != Stance::kWolf) {
             return;
         }
 
@@ -205,8 +190,8 @@ namespace Stances
             return;
         }
 
-        Utils::ApplySpell(player, player, StanceForms::savageInstinctSpell);
-        if (Settings::GetSingleton()->DebugLogging()) {
+        ApplySpell(player, StanceForms::savageInstinctSpell);
+        if (Settings::debugLogging.GetValue()) {
             logger::info("Savage Instinct kill bonus applied.");
         }
     }
@@ -225,17 +210,6 @@ namespace Stances
         }
     }
 
-    bool StanceManager::HasAnyStance(const RE::Actor* a_actor)
-    {
-        if (!a_actor) {
-            return false;
-        }
-
-        return std::ranges::any_of(StanceForms::stanceSpells, [a_actor](const auto& spell) {
-            return spell && a_actor->HasSpell(spell);
-        });
-    }
-
     void StanceManager::ApplyStance(Stance a_stance, RE::Actor* a_actor)
     {
         if (!a_actor) {
@@ -246,18 +220,14 @@ namespace Stances
 
         const auto spell = GetStanceSpell(a_stance);
         if (spell) {
-            Utils::ApplySpell(a_actor, a_actor, spell);
+            ApplySpell(a_actor, spell);
         }
     }
 
     void StanceManager::RemoveAllStances(RE::Actor* a_actor)
     {
-        if (!a_actor) {
-            return;
-        }
-
-        for (const auto& spell : StanceForms::stanceSpells) {
-            if (spell && a_actor->HasSpell(spell)) {
+        for (const auto spell : StanceForms::stanceSpells) {
+            if (a_actor->HasSpell(spell)) {
                 a_actor->RemoveSpell(spell);
             }
         }

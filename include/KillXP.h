@@ -4,16 +4,9 @@
 
 namespace Stances
 {
-    class KillXPEventSink final : public RE::BSTEventSink<RE::ActorKill::Event>
+    class KillXPEventSink final : public REX::Singleton<KillXPEventSink>, public RE::BSTEventSink<RE::ActorKill::Event>
     {
     public:
-        static KillXPEventSink* GetSingleton();
-
-        RE::BSEventNotifyControl ProcessEvent(
-            const RE::ActorKill::Event* a_event,
-            RE::BSTEventSource<RE::ActorKill::Event>* a_source) override;
-
-    private:
-        KillXPEventSink() = default;
+        RE::BSEventNotifyControl ProcessEvent(const RE::ActorKill::Event* a_event, RE::BSTEventSource<RE::ActorKill::Event>* a_source) override;
     };
 }

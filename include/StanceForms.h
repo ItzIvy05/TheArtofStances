@@ -7,7 +7,10 @@ namespace Stances
     public:
         static bool Load();
 
-        [[nodiscard]] static bool IsReady() noexcept { return ready; }
+        [[nodiscard]] static bool IsReady() noexcept
+        {
+            return ready;
+        }
 
         static inline RE::SpellItem* bearSpell{ nullptr };
         static inline RE::SpellItem* wolfSpell{ nullptr };

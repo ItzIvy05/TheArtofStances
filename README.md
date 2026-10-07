@@ -15,9 +15,10 @@ Custom Skills Framework skill tree, kill-based leveling, and a Scaleform HUD wid
   after a configurable delay (3-15 s). Position/scale configurable.
 - **Savage Instinct** (Wolf 75) is handled natively by the DLL: killing an enemy in Wolf stance casts the
   weapon-damage buff. No Papyrus.
-- **In-game settings** via [SKSE Menu Framework](https://www.nexusmods.com/skyrimspecialedition/mods/120352)
-  (optional): click-to-capture hotkey rebinding, HUD position/scale/duration sliders. Without SMF, everything
-  is configurable in `Data/SKSE/Plugins/Stances.ini`.
+- **In-game settings** via [FLICK](https://www.nexusmods.com/skyrimspecialedition/mods/181603) or, without it,
+  [SKSE Menu Framework](https://www.nexusmods.com/skyrimspecialedition/mods/120352) (both optional): one-button
+  hotkey rebinding, HUD position/scale/duration sliders. Without either, everything is configurable in
+  `Data/SKSE/Plugins/Stances.ini`.
 
 ## Runtime layout
 

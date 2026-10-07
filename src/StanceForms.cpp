@@ -1,7 +1,6 @@
 #include "StanceForms.h"
 
 #include "Settings.h"
-#include "Utils.h"
 
 namespace Stances
 {
@@ -25,14 +24,14 @@ namespace Stances
     {
         ready = false;
 
-        if (!Utils::IsModLoaded(STANCE_PLUGIN)) {
-            logger::warn("{} is not loaded. Stance switching is disabled; kill XP still works.", STANCE_PLUGIN);
-            return false;
-        }
-
         const auto dataHandler = RE::TESDataHandler::GetSingleton();
         if (!dataHandler) {
             logger::error("TESDataHandler unavailable.");
+            return false;
+        }
+
+        if (!dataHandler->LookupLoadedModByName(STANCE_PLUGIN) && !dataHandler->LookupLoadedLightModByName(STANCE_PLUGIN)) {
+            logger::warn("{} is not loaded. Stance switching is disabled; kill XP still works.", STANCE_PLUGIN);
             return false;
         }
 

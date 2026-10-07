@@ -1,10 +1,10 @@
 #include "CustomSkillsAPI.h"
 #include "Events.h"
-#include "Manager.h"
-#include "MCP.h"
-#include "Plugin.h"
+#include "Settings.h"
+#include "SettingsUI.h"
+#include "StanceForms.h"
 #include "StanceInput.h"
-#include "logger.h"
+#include "Widget.h"
 
 namespace
 {
@@ -15,19 +15,21 @@ namespace
         }
 
         switch (a_msg->type) {
+        case SKSE::MessagingInterface::kPostLoad:
+            Stances::SettingsUI::Register();
+            break;
         case SKSE::MessagingInterface::kInputLoaded:
             Stances::StanceInput::Register();
             break;
         case SKSE::MessagingInterface::kDataLoaded:
-            Stances::Manager::GetSingleton()->OnDataLoaded();
+            Stances::Settings::Load();
+            Stances::StanceForms::Load();
+            Stances::Widget::Init();
             Stances::Events::Register();
-            Stances::MCP::Register();
             break;
         case SKSE::MessagingInterface::kNewGame:
-            Stances::Manager::GetSingleton()->OnNewGame();
-            break;
         case SKSE::MessagingInterface::kPostLoadGame:
-            Stances::Manager::GetSingleton()->OnPostLoadGame();
+            Stances::Settings::Load();
             break;
         default:
             break;
@@ -38,9 +40,8 @@ namespace
 SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
 {
     SKSE::Init(a_skse);
-    SetupLog();
 
-    logger::info("Loading {}...", Stances::PLUGIN_NAME);
+    logger::info("Loading {}...", SKSE::GetPluginName());
 
     const auto messaging = SKSE::GetMessagingInterface();
     if (!messaging) {
@@ -57,6 +58,6 @@ SKSEPluginLoad(const SKSE::LoadInterface* a_skse)
         logger::warn("Failed to register Custom Skills Framework message listener. Kill XP will wait for interface availability.");
     }
 
-    logger::info("{} loaded.", Stances::PLUGIN_NAME);
+    logger::info("{} loaded.", SKSE::GetPluginName());
     return true;
 }

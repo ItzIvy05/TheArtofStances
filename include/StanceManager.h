@@ -17,16 +17,14 @@ namespace Stances
         [[nodiscard]] static const char* StanceName(Stance a_stance);
         [[nodiscard]] static bool IsStanceUnlocked(Stance a_stance);
 
-        static void ApplyDefaultStance();
         static void UpdateStance(Stance a_stance, RE::Actor* a_actor);
         static void UpdateStancePlayer(Stance a_stance);
-        static bool CycleStancesPlayer();
+        static void CycleStancesPlayer();
         static void HandlePlayerKill();
         static void NotifyStatsMenu(bool a_opening);
 
     private:
         [[nodiscard]] static RE::SpellItem* GetStanceSpell(Stance a_stance);
-        [[nodiscard]] static bool HasAnyStance(const RE::Actor* a_actor);
         static void ApplyStance(Stance a_stance, RE::Actor* a_actor);
         static void RemoveAllStances(RE::Actor* a_actor);
     };

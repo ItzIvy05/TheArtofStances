@@ -4,22 +4,13 @@
 #include "StanceForms.h"
 #include "StanceManager.h"
 
-#include <chrono>
-
 namespace Stances::Widget
 {
     namespace
     {
-        constexpr const char* WIDGET_ROOT = "_root.widget";
-
         std::atomic_bool s_showQueued{ false };
         std::atomic_bool s_popupActive{ false };
-        std::atomic<double> s_popupDeadline{ 0.0 };
-
-        [[nodiscard]] double NowSeconds()
-        {
-            return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
-        }
+        std::atomic<std::uint32_t> s_popupDeadline{ 0 };
 
         class StancesWidgetMenu : public RE::IMenu
         {
@@ -30,11 +21,7 @@ namespace Stances::Widget
             StancesWidgetMenu()
             {
                 depthPriority = 0;
-                menuFlags.set(
-                    RE::UI_MENU_FLAGS::kAlwaysOpen,
-                    RE::UI_MENU_FLAGS::kAllowSaving,
-                    RE::UI_MENU_FLAGS::kRequiresUpdate,
-                    RE::UI_MENU_FLAGS::kAdvancesUnderPauseMenu);
+                menuFlags.set(RE::UI_MENU_FLAGS::kAlwaysOpen, RE::UI_MENU_FLAGS::kAllowSaving, RE::UI_MENU_FLAGS::kRequiresUpdate, RE::UI_MENU_FLAGS::kAdvancesUnderPauseMenu);
                 if (RE::BSScaleformManager::GetSingleton()->LoadMovie(this, uiMovie, FILE_NAME)) {
                     logger::info("Stance widget movie loaded.");
                 } else {
@@ -49,22 +36,20 @@ namespace Stances::Widget
                 Tick();
             }
 
-            static RE::IMenu* Creator() { return new StancesWidgetMenu(); }
+            static RE::IMenu* Creator()
+            {
+                return new StancesWidgetMenu();
+            }
         };
 
         [[nodiscard]] RE::GPtr<RE::GFxMovieView> GetWidgetMovie()
         {
             const auto ui = RE::UI::GetSingleton();
-            if (!ui || ui->IsMenuOpen("Loading Menu")) {
+            if (!ui || ui->IsMenuOpen(RE::LoadingMenu::MENU_NAME)) {
                 return nullptr;
             }
 
-            const auto menu = ui->GetMenu(StancesWidgetMenu::MENU_NAME);
-            if (!menu || !menu->uiMovie) {
-                return nullptr;
-            }
-
-            return menu->uiMovie;
+            return ui->GetMovieView(StancesWidgetMenu::MENU_NAME);
         }
 
         void EnsureMenuShown()
@@ -80,7 +65,7 @@ namespace Stances::Widget
                 return;
             }
 
-            if (!ui->IsMenuOpen("HUD Menu")) {
+            if (!ui->IsMenuOpen(RE::HUDMenu::MENU_NAME)) {
                 return;
             }
 
@@ -103,31 +88,6 @@ namespace Stances::Widget
             queue->AddMessage(StancesWidgetMenu::MENU_NAME, RE::UI_MESSAGE_TYPE::kHide, nullptr);
         }
 
-        void ForceRootVisible(RE::GFxMovieView* a_movie)
-        {
-            if (!a_movie) {
-                return;
-            }
-
-            RE::GFxValue rootVisible;
-            rootVisible.SetBoolean(true);
-            a_movie->SetVariable("_root._visible", rootVisible);
-        }
-
-        void SetVar(RE::GFxMovieView* a_movie, const char* a_member, double a_value)
-        {
-            RE::GFxValue value;
-            value.SetNumber(a_value);
-            a_movie->SetVariable((std::string(WIDGET_ROOT) + a_member).c_str(), value);
-        }
-
-        void SetVarBool(RE::GFxMovieView* a_movie, const char* a_member, bool a_value)
-        {
-            RE::GFxValue value;
-            value.SetBoolean(a_value);
-            a_movie->SetVariable((std::string(WIDGET_ROOT) + a_member).c_str(), value);
-        }
-
         [[nodiscard]] bool ShouldSuppressForMenus()
         {
             const auto player = RE::PlayerCharacter::GetSingleton();
@@ -141,13 +101,31 @@ namespace Stances::Widget
             }
 
             static constexpr std::array<std::string_view, 22> blockingMenus = {
-                "BarterMenu", "Book Menu", "Console", "ContainerMenu", "Crafting Menu", "Dialogue Menu",
-                "FavoritesMenu", "GiftMenu", "InventoryMenu", "Journal Menu", "Loading Menu", "Lockpicking Menu",
-                "MagicMenu", "Main Menu", "MapMenu", "MessageBoxMenu", "RaceSex Menu", "Sleep/Wait Menu",
-                "StatsMenu", "Training Menu", "TweenMenu", "Tutorial Menu"
+                RE::BarterMenu::MENU_NAME,
+                RE::BookMenu::MENU_NAME,
+                RE::Console::MENU_NAME,
+                RE::ContainerMenu::MENU_NAME,
+                RE::CraftingMenu::MENU_NAME,
+                RE::DialogueMenu::MENU_NAME,
+                RE::FavoritesMenu::MENU_NAME,
+                RE::GiftMenu::MENU_NAME,
+                RE::InventoryMenu::MENU_NAME,
+                RE::JournalMenu::MENU_NAME,
+                RE::LoadingMenu::MENU_NAME,
+                RE::LockpickingMenu::MENU_NAME,
+                RE::MagicMenu::MENU_NAME,
+                RE::MainMenu::MENU_NAME,
+                RE::MapMenu::MENU_NAME,
+                RE::MessageBoxMenu::MENU_NAME,
+                RE::RaceSexMenu::MENU_NAME,
+                RE::SleepWaitMenu::MENU_NAME,
+                RE::StatsMenu::MENU_NAME,
+                RE::TrainingMenu::MENU_NAME,
+                RE::TweenMenu::MENU_NAME,
+                RE::TutorialMenu::MENU_NAME
             };
             for (const auto name : blockingMenus) {
-                if (ui->IsMenuOpen(name.data())) {
+                if (ui->IsMenuOpen(name)) {
                     return true;
                 }
             }
@@ -177,43 +155,41 @@ namespace Stances::Widget
             return;
         }
 
-        ForceRootVisible(movie.get());
+        movie->SetVariable("_root._visible", RE::GFxValue{ true });
 
-        const auto settings = Settings::GetSingleton();
         const auto stance = StanceManager::CurrentStance();
-        const bool popupOk = !settings->AutoHideWidget() || s_popupActive.load();
-        const bool show = settings->ShowWidget() && StanceForms::IsReady() &&
-                          stance != Stance::kNeutral && popupOk && !ShouldSuppressForMenus();
+        const bool popupOk = !Settings::autoHideWidget.GetValue() || s_popupActive.load();
+        const bool show = Settings::showWidget.GetValue() && StanceForms::IsReady() && stance != Stance::kNeutral && popupOk && !ShouldSuppressForMenus();
 
-        SetVar(movie.get(), "._x", static_cast<double>(settings->HudX()));
-        SetVar(movie.get(), "._y", static_cast<double>(settings->HudY()));
-        const auto scale = std::clamp(settings->HudScale(), 10, 300);
-        SetVar(movie.get(), "._xscale", static_cast<double>(scale));
-        SetVar(movie.get(), "._yscale", static_cast<double>(scale));
+        movie->SetVariable("_root.widget._x", RE::GFxValue{ Settings::hudX.GetValue() });
+        movie->SetVariable("_root.widget._y", RE::GFxValue{ Settings::hudY.GetValue() });
+        const auto scale = std::clamp(Settings::hudScale.GetValue(), 10, 300);
+        movie->SetVariable("_root.widget._xscale", RE::GFxValue{ scale });
+        movie->SetVariable("_root.widget._yscale", RE::GFxValue{ scale });
 
-        SetVarBool(movie.get(), ".bear._visible", stance == Stance::kBear);
-        SetVarBool(movie.get(), ".wolf._visible", stance == Stance::kWolf);
-        SetVarBool(movie.get(), ".hawk._visible", stance == Stance::kHawk);
-        SetVarBool(movie.get(), "._visible", show);
+        movie->SetVariable("_root.widget.bear._visible", RE::GFxValue{ stance == Stance::kBear });
+        movie->SetVariable("_root.widget.wolf._visible", RE::GFxValue{ stance == Stance::kWolf });
+        movie->SetVariable("_root.widget.hawk._visible", RE::GFxValue{ stance == Stance::kHawk });
+        movie->SetVariable("_root.widget._visible", RE::GFxValue{ show });
         if (show) {
-            SetVar(movie.get(), "._alpha", 100.0);
+            movie->SetVariable("_root.widget._alpha", RE::GFxValue{ 100.0 });
         }
     }
 
     void Pop()
     {
-        s_popupDeadline.store(NowSeconds() + Settings::GetSingleton()->WidgetSeconds());
+        s_popupDeadline.store(RE::GetDurationOfApplicationRunTime() + static_cast<std::uint32_t>(Settings::widgetSeconds.GetValue() * 1000));
         s_popupActive.store(true);
         Refresh();
     }
 
     void Tick()
     {
-        if (!Settings::GetSingleton()->AutoHideWidget()) {
+        if (!Settings::autoHideWidget.GetValue()) {
             return;
         }
 
-        if (s_popupActive.load() && NowSeconds() >= s_popupDeadline.load()) {
+        if (s_popupActive.load() && RE::GetDurationOfApplicationRunTime() >= s_popupDeadline.load()) {
             s_popupActive.store(false);
             Refresh();
         }
@@ -221,7 +197,7 @@ namespace Stances::Widget
 
     void NotifyMenuEvent(std::string_view a_menuName, bool a_opening)
     {
-        if (a_menuName == "HUD Menu") {
+        if (a_menuName == RE::HUDMenu::MENU_NAME) {
             if (a_opening) {
                 EnsureMenuShown();
             } else {
