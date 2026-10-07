@@ -21,9 +21,10 @@ namespace Stances
         static void UpdateStancePlayer(Stance a_stance);
         static void CycleStancesPlayer();
         static void HandlePlayerKill();
-        static void NotifyStatsMenu(bool a_opening);
+        static void NotifyPerkAdded(const RE::BGSPerk* a_perk);
 
     private:
+        [[nodiscard]] static RE::BGSPerk* GetAspectPerk(Stance a_stance);
         [[nodiscard]] static RE::SpellItem* GetStanceSpell(Stance a_stance);
         static void ApplyStance(Stance a_stance, RE::Actor* a_actor);
         static void RemoveAllStances(RE::Actor* a_actor);

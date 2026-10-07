@@ -59,21 +59,7 @@ namespace Stances
             return false;
         }
 
-        RE::BGSPerk* perk = nullptr;
-        switch (a_stance) {
-        case Stance::kBear:
-            perk = StanceForms::bearPerk;
-            break;
-        case Stance::kWolf:
-            perk = StanceForms::wolfPerk;
-            break;
-        case Stance::kHawk:
-            perk = StanceForms::hawkPerk;
-            break;
-        default:
-            break;
-        }
-
+        const auto perk = GetAspectPerk(a_stance);
         return !perk || player->HasPerk(perk);
     }
 
@@ -131,49 +117,6 @@ namespace Stances
         }
     }
 
-    void StanceManager::NotifyStatsMenu(bool a_opening)
-    {
-        static std::array<bool, 3> hadPerk{ true, true, true };
-        static bool snapshotValid = false;
-
-        if (!StanceForms::IsReady()) {
-            return;
-        }
-
-        const auto player = RE::PlayerCharacter::GetSingleton();
-        if (!player) {
-            snapshotValid = false;
-            return;
-        }
-
-        const std::array<std::pair<RE::BGSPerk*, Stance>, 3> aspects{ {
-            { StanceForms::bearPerk, Stance::kBear },
-            { StanceForms::wolfPerk, Stance::kWolf },
-            { StanceForms::hawkPerk, Stance::kHawk },
-        } };
-
-        if (a_opening) {
-            for (std::size_t i = 0; i < aspects.size(); ++i) {
-                hadPerk[i] = !aspects[i].first || player->HasPerk(aspects[i].first);
-            }
-            snapshotValid = true;
-            return;
-        }
-
-        if (!snapshotValid) {
-            return;
-        }
-        snapshotValid = false;
-
-        for (std::size_t i = 0; i < aspects.size(); ++i) {
-            const auto perk = aspects[i].first;
-            if (!hadPerk[i] && perk && player->HasPerk(perk)) {
-                UpdateStancePlayer(aspects[i].second);
-                return;
-            }
-        }
-    }
-
     void StanceManager::HandlePlayerKill()
     {
         if (!StanceForms::savageInstinctControlEffect || !StanceForms::savageInstinctSpell || CurrentStance() != Stance::kWolf) {
@@ -193,6 +136,31 @@ namespace Stances
         ApplySpell(player, StanceForms::savageInstinctSpell);
         if (Settings::debugLogging.GetValue()) {
             logger::info("Savage Instinct kill bonus applied.");
+        }
+    }
+
+    void StanceManager::NotifyPerkAdded(const RE::BGSPerk* a_perk)
+    {
+        for (const auto stance : { Stance::kBear, Stance::kWolf, Stance::kHawk }) {
+            if (a_perk == GetAspectPerk(stance)) {
+                // papyrus adds perks
+                SKSE::GetTaskInterface()->AddTask(std::bind_front(UpdateStancePlayer, stance));
+                return;
+            }
+        }
+    }
+
+    RE::BGSPerk* StanceManager::GetAspectPerk(Stance a_stance)
+    {
+        switch (a_stance) {
+        case Stance::kBear:
+            return StanceForms::bearPerk;
+        case Stance::kWolf:
+            return StanceForms::wolfPerk;
+        case Stance::kHawk:
+            return StanceForms::hawkPerk;
+        default:
+            return nullptr;
         }
     }
 

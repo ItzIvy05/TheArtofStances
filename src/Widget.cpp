@@ -9,8 +9,10 @@ namespace Stances::Widget
     namespace
     {
         std::atomic_bool s_showQueued{ false };
+        std::atomic_bool s_popPending{ false };
         std::atomic_bool s_popupActive{ false };
         std::atomic<std::uint32_t> s_popupDeadline{ 0 };
+        std::atomic<Stance> s_shownStance{ Stance::kNeutral };
 
         class StancesWidgetMenu : public RE::IMenu
         {
@@ -158,6 +160,7 @@ namespace Stances::Widget
         movie->SetVariable("_root._visible", RE::GFxValue{ true });
 
         const auto stance = StanceManager::CurrentStance();
+        s_shownStance.store(stance);
         const bool popupOk = !Settings::autoHideWidget.GetValue() || s_popupActive.load();
         const bool show = Settings::showWidget.GetValue() && StanceForms::IsReady() && stance != Stance::kNeutral && popupOk && !ShouldSuppressForMenus();
 
@@ -178,6 +181,13 @@ namespace Stances::Widget
 
     void Pop()
     {
+        // a pop behind a menu waits for the menu to close
+        if (ShouldSuppressForMenus()) {
+            s_popPending.store(true);
+            Refresh();
+            return;
+        }
+
         s_popupDeadline.store(RE::GetDurationOfApplicationRunTime() + static_cast<std::uint32_t>(Settings::widgetSeconds.GetValue() * 1000));
         s_popupActive.store(true);
         Refresh();
@@ -185,6 +195,12 @@ namespace Stances::Widget
 
     void Tick()
     {
+        // the global can change outside the plugin, papyrus clears it on a respec
+        if (StanceManager::CurrentStance() != s_shownStance.load()) {
+            Refresh();
+            return;
+        }
+
         if (!Settings::autoHideWidget.GetValue()) {
             return;
         }
@@ -203,6 +219,12 @@ namespace Stances::Widget
             } else {
                 HideMenu();
             }
+        }
+
+        if (s_popPending.load() && !ShouldSuppressForMenus()) {
+            s_popPending.store(false);
+            Pop();
+            return;
         }
 
         Refresh();

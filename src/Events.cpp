@@ -17,18 +17,29 @@ namespace Stances::Events
                     return RE::BSEventNotifyControl::kContinue;
                 }
 
-                if (a_event->menuName == RE::StatsMenu::MENU_NAME) {
-                    StanceManager::NotifyStatsMenu(a_event->opening);
-                }
-
                 Widget::NotifyMenuEvent(a_event->menuName.c_str(), a_event->opening);
                 return RE::BSEventNotifyControl::kContinue;
             }
+        };
+
+        // the stats menu, papyrus and the console all add the player's perks through this
+        struct AddPerk
+        {
+            static void thunk(RE::PlayerCharacter* a_this, RE::BGSPerk* a_perk, std::uint32_t a_rank)
+            {
+                func(a_this, a_perk, a_rank);
+                StanceManager::NotifyPerkAdded(a_perk);
+            }
+
+            static inline REL::Relocation<decltype(thunk)> func;
         };
     }
 
     void Register()
     {
+        REL::Relocation<std::uintptr_t> vtbl{ RE::VTABLE_PlayerCharacter[0] };
+        AddPerk::func = vtbl.write_vfunc(0xFB, AddPerk::thunk);
+
         auto* source = RE::ActorKill::GetEventSource();
         if (!source) {
             logger::critical("Failed to get ActorKill event source.");
